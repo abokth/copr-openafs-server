@@ -1,22 +1,13 @@
 ## This only builds the userland portion, kernel modules are excluded.
 ## Support for distros older than EL7 is dropped.
 
-# Openafs Spec $Revision$
-
 #define afsvers 1.8.0pre5
-#define afsvers 1.8.2
 %define afsvers 1.8.3
 %define pkgvers 1.8.3
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1.0.kth.2
-
-# Define the location of your init.d directory
-%define initdir /etc/rc.d/init.d
-
-# Make sure RPM doesn't complain about installed but non-packaged files.
-#define __check_files  %{nil}
+%define pkgrel 1.0.kth.5
 
 Summary: OpenAFS distributed filesystem
 Name: openafs
@@ -33,12 +24,12 @@ BuildRequires: perl-devel
 BuildRequires: perl(ExtUtils::Embed)
 BuildRequires: krb5-devel
 
+# TODO is this relevant for a server-only build?
 ExclusiveArch: %{ix86} x86_64 ia64 s390 s390x sparc64 ppc ppc64
 
 #    http://dl.openafs.org/dl/openafs/candidate/%{afsvers}/...
 Source0: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-src.tar.bz2
 Source1: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-doc.tar.bz2
-Source3: openafs-client.service
 %define srcdir openafs-%{afsvers}
 
 Source10: http://www.openafs.org/dl/openafs/%{afsvers}/RELNOTES-%{afsvers}
@@ -46,10 +37,8 @@ Source11: http://www.openafs.org/dl/openafs/%{afsvers}/ChangeLog
 Source20: https://www.central.org/dl/cellservdb/CellServDB.2018-05-14
 # firewalld service devinitions
 Source21: afs3-bos.xml
-Source22: afs3-callback.xml
 Source23: afs3-fileserver.xml
 Source24: afs3-prserver.xml
-Source25: afs3-rmtsys.xml
 Source26: afs3-update.xml
 Source27: afs3-vlserver.xml
 Source28: afs3-volser.xml
@@ -64,11 +53,6 @@ This package provides common files shared across all the various
 OpenAFS packages but are not necessarily tied to a client or server.
 
 
-##############################################################################
-#
-# build the userspace side of things if so requested
-#
-##############################################################################
 %package server
 Requires: openafs = %{version}
 Summary: OpenAFS Filesystem Server
@@ -180,22 +164,6 @@ completely optional, and is only necessary to support legacy
 applications and scripts that hard-code the location of AFS client
 programs.
 
-%package transarc-server
-Summary: OpenAFS client compatibility symlinks
-Requires: openafs = %{version}, openafs-server = %{version}
-Group: Networking/Filesystems
-
-%description transarc-server
-The AFS distributed filesystem.  AFS is a distributed filesystem
-allowing cross-platform sharing of files among multiple computers.
-Facilities are provided for access control, authentication, backup and
-administrative management.
-
-This package provides compatibility symlinks for Transarc paths.  It
-is completely optional, and is only necessary to support legacy
-applications and scripts that hard-code the location of AFS client
-programs.
-
 %package server-firewalld
 Summary: OpenAFS server firewalld configuration for a server
 Requires: openafs = %{version}, openafs-server = %{version}, firewalld-filesystem
@@ -285,20 +253,10 @@ case %{_arch} in
        *)                              sysname=%{_arch}_linux${kv}     ;;
 esac
 
-# Fix the location of restorevol, since it should be available for
-# any user in /usr/bin
-#mv $RPM_BUILD_ROOT%{_prefix}/afs/bin/restorevol $RPM_BUILD_ROOT%{_bindir}/restorevol
-
 # Copy root.client config files
 mkdir -p $RPM_BUILD_ROOT/etc/openafs
 mkdir -p $RPM_BUILD_ROOT/etc/sysconfig
-mkdir -p $RPM_BUILD_ROOT%{initdir}
-mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/cache/openafs
-#install -m 755 src/packaging/RedHat/openafs.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/openafs
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/modules
-#install -m 644 %{SOURCE3} $RPM_BUILD_ROOT%{_unitdir}/openafs-client.service
-#install -m 755 src/packaging/RedHat/openafs-client.modules $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/modules/openafs-client.modules
 install -m 644 src/packaging/RedHat/openafs-server.service $RPM_BUILD_ROOT%{_unitdir}/openafs-server.service
 
 
@@ -381,34 +339,6 @@ for d in bin:bin etc:sbin; do
 done
 
 #
-# Install transarc links
-#
-## Client
-#mkdir $RPM_BUILD_ROOT%{_prefix}/vice
-#ln -s %{_sysconfdir}/openafs $RPM_BUILD_ROOT%{_prefix}/vice/etc
-#ln -s %{_localstatedir}/cache/openafs $RPM_BUILD_ROOT%{_prefix}/vice/cache
-
-## Server
-mkdir $RPM_BUILD_ROOT%{_prefix}/afs
-ln -s %{_sysconfdir}/openafs/server $RPM_BUILD_ROOT%{_prefix}/afs/etc
-ln -s %{_localstatedir}/openafs $RPM_BUILD_ROOT%{_prefix}/afs/local
-ln -s %{_localstatedir}/openafs/db $RPM_BUILD_ROOT%{_prefix}/afs/db
-ln -s %{_localstatedir}/openafs/logs $RPM_BUILD_ROOT%{_prefix}/afs/logs
-ln -s %{_localstatedir}/openafs/backup $RPM_BUILD_ROOT%{_prefix}/afs/backup
-mkdir $RPM_BUILD_ROOT%{_prefix}/afs/bin
-### find all the executables in /usr/sbin
-for f in `find $RPM_BUILD_ROOT%{_prefix}/sbin -executable`; do
-    fb=`basename $f`
-    ln -s %{_sbindir}/$fb $RPM_BUILD_ROOT%{_prefix}/afs/bin/$fb
-done
-### find all the executables in /usr/libexec/openafs
-for f in `find $RPM_BUILD_ROOT%{_libexec}/openafs -executable`; do
-    fb=`basename $f`
-    ln -s %{_libexec}/openafs/$fb $RPM_BUILD_ROOT%{_prefix}/afs/bin/$fb
-done
-
-
-#
 # Remove files we're not installing
 #
 
@@ -431,12 +361,6 @@ done
 rm -f $RPM_BUILD_ROOT%{_libdir}/libjuafs.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/libuafs.a
 
-# Populate /etc/openafs
-#install -p -m 644 src/packaging/RedHat/openafs-ThisCell $RPM_BUILD_ROOT%{_sysconfdir}/openafs/ThisCell
-#install -p -m 644 %{SOURCE20} $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB.dist
-#touch $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB.local
-#install -p -m 644 src/packaging/RedHat/openafs-cacheinfo $RPM_BUILD_ROOT%{_sysconfdir}/openafs/cacheinfo
-
 # Populate /etc/openafs/server
 ## Create empty files to be configured later
 mkdir $RPM_BUILD_ROOT%{_sysconfdir}/openafs/server
@@ -449,14 +373,8 @@ touch $RPM_BUILD_ROOT%{_sysconfdir}/openafs/server/UserList
 # Fix systemd service unit which has transarc paths
 ## Fix location of environment file
 sed -i 's!EnvironmentFile=-/etc/sysconfig/openafs!EnvironmentFile=-%{_sysconfdir}/sysconfig/openafs-server!g' $RPM_BUILD_ROOT%{_unitdir}/openafs-server.service
-## Fix location of CellServDB
-#sed -i 's!/usr/vice/etc/CellServDB!%{_sysconfdir}/openafs/CellServDB!g' $RPM_BUILD_ROOT%{_unitdir}/openafs-client.service
-## Fix the location of afsd
-#sed -i 's!/usr/vice/etc/afsd!%{_sbindir}/afsd!' $RPM_BUILD_ROOT%{_unitdir}/openafs-client.service
 ## Fix location of bosserver
 sed -i 's!/usr/afs/bin/bosserver!%{_sbindir}/bosserver!' $RPM_BUILD_ROOT%{_unitdir}/openafs-server.service
-## Fix cacheinfo to point at /var/cache/openafs
-#sed -i 's!/usr/vice/cache!%{_localstatedir}/cache/openafs!' $RPM_BUILD_ROOT%{_sysconfdir}/openafs/cacheinfo
 
 # Set the executable bit on libraries in libdir, so rpmbuild knows to
 # create "Provides" entries in the package metadata for the libraries
@@ -465,29 +383,19 @@ chmod +x $RPM_BUILD_ROOT%{_libdir}/*.so*
 # Set up firewalld files
 install -d -m 755 %{buildroot}%{_prefix}/lib/firewalld/services
 install -p -m 644 %SOURCE21 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-bos.xml
-#install -p -m 644 %SOURCE22 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-callback.xml
 install -p -m 644 %SOURCE23 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-fileserver.xml
 install -p -m 644 %SOURCE24 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-prserver.xml
-#install -p -m 644 %SOURCE25 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-rmtsys.xml
 install -p -m 644 %SOURCE26 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-update.xml
 install -p -m 644 %SOURCE27 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-vlserver.xml
 install -p -m 644 %SOURCE28 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-volser.xml
 
-# remove files: client
-#rmdir $RPM_BUILD_ROOT%{_localstatedir}/cache/openafs
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB.dist
-rm -f %ghost $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB.local
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/openafs/ThisCell
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/openafs/cacheinfo
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/openafs
+# Remove client related files
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/openafs/CellServDB
 rm -f $RPM_BUILD_ROOT%{_bindir}/afsio
 rm -f $RPM_BUILD_ROOT%{_bindir}/cmdebug
 rm -f $RPM_BUILD_ROOT%{_bindir}/up
 rm -f $RPM_BUILD_ROOT%{_sbindir}/afsd
 rm -f $RPM_BUILD_ROOT%{_prefix}/share/openafs/C/afszcm.cat
-#rm -f $RPM_BUILD_ROOT%{_unitdir}/openafs-client.service
-#rm -f $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/modules/openafs-client.modules
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/cmdebug.*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man1/up.*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man5/afs.*
@@ -498,13 +406,7 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man5/cacheinfo.*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man8/afsd.*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man8/vsys.*
 rm -f $RPM_BUILD_ROOT%{_mandir}/man5/CellAlias.*
-# remove files: transarc-client
-#rm -f $RPM_BUILD_ROOT%{_prefix}/vice/*
-#rmdir $RPM_BUILD_ROOT%{_prefix}/vice
-# remove files: client-firewalld
-#rm -f $RPM_BUILD_ROOT%{_prefix}/lib/firewalld/services/afs3-callback.xml
-#rm -f $RPM_BUILD_ROOT%{_prefix}/lib/firewalld/services/afs3-rmtsys.xml
- 
+
 
 ##############################################################################
 ###
@@ -522,12 +424,6 @@ rm -f openafs-file-list
 ###
 ##############################################################################
 %post server
-#on an upgrade, don't enable if we were disabled
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-if [ $1 = 1 ] ; then
-  chkconfig --add openafs-server
-fi
-%{initdir}/openafs-server condrestart
 
 %post authlibs
 /sbin/ldconfig
@@ -535,43 +431,14 @@ fi
 %postun authlibs
 /sbin/ldconfig
 
-%preun
-if [ $1 = 0 ] ; then
-	[ -d /afs ] && rmdir /afs
-	:
-fi
-
 %preun server
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-if [ $1 = 0 ] ; then
-        %{initdir}/openafs-server stop
-        chkconfig --del openafs-server
-fi
-%else
 if [ $1 -eq 0 ] ; then
     	/bin/systemctl --no-reload disable openafs-server.service > /dev/null 2>&1 || :
     	/bin/systemctl stop openafs-server.service > /dev/null 2>&1 || :
 fi
-%endif
 
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 %postun server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
-%endif
-
-%endif
-
-
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
-%triggerun -- openafs-server < 1.6.0-1
-# Save the current service runlevel info
-# User must manually run systemd-sysv-convert --apply httpd
-# to migrate them to systemd targets
-/usr/bin/systemd-sysv-convert --save openafs-server >/dev/null 2>&1 ||:
-
-# Run this because the SysV package being removed won't do it
-/sbin/chkconfig --del openafs-server >/dev/null 2>&1 || :
-%endif
 
 %post server-firewalld
 %firewalld_reload
@@ -584,7 +451,6 @@ fi
 %files 
 #-f openafs-file-list
 %defattr(-,root,root)
-#config(noreplace) /etc/sysconfig/openafs
 %{_bindir}/afsmonitor
 %{_bindir}/bos
 %{_bindir}/fs
@@ -803,17 +669,6 @@ fi
 %defattr(-,root,root)
 %{_prefix}/afsws
 
-%files transarc-server
-%defattr(-,root,root)
-%dir %{_prefix}/afs
-%dir %{_prefix}/afs/bin
-%{_prefix}/afs/bin/*
-%{_prefix}/afs/backup
-%{_prefix}/afs/etc
-%{_prefix}/afs/db
-%{_prefix}/afs/local
-%{_prefix}/afs/logs
-
 %files server-firewalld
 %defattr(-,root,root)
 %{_prefix}/lib/firewalld/services/afs3-bos.xml
@@ -829,6 +684,15 @@ fi
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.5
+- Cleanup.
+
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.4
+- Fix distro version ifs
+
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.3
+- Remove transarc subpackages
+
 * Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.2
 - 1.8.3 without client
 
