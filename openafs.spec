@@ -7,16 +7,15 @@
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1.0.kth.5
+%define pkgrel 1.0.kth.6
 
-Summary: OpenAFS distributed filesystem
+Summary: A distributed filesystem
 Name: openafs
 Version: %{pkgvers}
 Release: %{pkgrel}%{?dist}
 License: IBM Public License
-URL: http://www.openafs.org
+URL: https://www.openafs.org/
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-Packager: OpenAFS Gatekeepers <openafs-gatekeepers@openafs.org>
 Group: Networking/Filesystems
 BuildRequires: ncurses-devel, flex, bison, automake, autoconf, libtool
 BuildRequires: systemd-units
@@ -27,13 +26,13 @@ BuildRequires: krb5-devel
 # TODO is this relevant for a server-only build?
 ExclusiveArch: %{ix86} x86_64 ia64 s390 s390x sparc64 ppc ppc64
 
-#    http://dl.openafs.org/dl/openafs/candidate/%{afsvers}/...
+#    http://dl.openafs.org/dl/openafs/candidate/(afsvers)/...
 Source0: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-src.tar.bz2
 Source1: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-doc.tar.bz2
 %define srcdir openafs-%{afsvers}
 
-Source10: http://www.openafs.org/dl/openafs/%{afsvers}/RELNOTES-%{afsvers}
-Source11: http://www.openafs.org/dl/openafs/%{afsvers}/ChangeLog
+Source10: https://www.openafs.org/dl/openafs/%{afsvers}/RELNOTES-%{afsvers}
+Source11: https://www.openafs.org/dl/openafs/%{afsvers}/ChangeLog
 Source20: https://www.central.org/dl/cellservdb/CellServDB.2018-05-14
 # firewalld service devinitions
 Source21: afs3-bos.xml
@@ -147,23 +146,6 @@ This package provides compatibility programs so you can use krb5
 to authenticate to AFS services, instead of using the AFS homegrown
 krb4 lookalike services.
 
-%package compat
-Summary: OpenAFS client compatibility symlinks
-Requires: openafs = %{version}, openafs-client = %{version}
-Group: Networking/Filesystems
-Obsoletes: openafs-client-compat
-
-%description compat
-The AFS distributed filesystem.  AFS is a distributed filesystem
-allowing cross-platform sharing of files among multiple computers.
-Facilities are provided for access control, authentication, backup and
-administrative management.
-
-This package provides compatibility symlinks in /usr/afsws.  It is
-completely optional, and is only necessary to support legacy
-applications and scripts that hard-code the location of AFS client
-programs.
-
 %package server-firewalld
 Summary: OpenAFS server firewalld configuration for a server
 Requires: openafs = %{version}, openafs-server = %{version}, firewalld-filesystem
@@ -198,10 +180,10 @@ setup for an OpenAFS server.
 %build
 kv='26'
 case %{_arch} in
-       x86_64)                         sysname=amd64_linux${kv}        ;;
-       alpha*)                         sysname=alpha_linux_${kv}       ;;
-       i386|i486|i586|i686|athlon)     sysname=i386_linux${kv}         ;;
-       *)                              sysname=%{_arch}_linux${kv}     ;;
+    x86_64)                         sysname=amd64_linux${kv}        ;;
+    alpha*)                         sysname=alpha_linux_${kv}       ;;
+    i386|i486|i586|i686|athlon)     sysname=i386_linux${kv}         ;;
+    *)                              sysname=%{_arch}_linux${kv}     ;;
 esac
 DESTDIR=$RPM_BUILD_ROOT; export DESTDIR
 CFLAGS="$RPM_OPT_FLAGS"; export CFLAGS
@@ -210,8 +192,8 @@ KRB5_CONFIG="%{krb5config}"
 export KRB5_CONFIG
 
 #if [[ ! -f configure ]]; then
-   echo %{afsvers} > .version
-   sh regen.sh
+    echo %{afsvers} > .version
+    sh regen.sh
 #fi
 
 # Fedora 23+ won't compile with the redhat-hardened-ld
@@ -220,13 +202,13 @@ LDFLAGS=$( echo %__global_ldflags | sed 's!-specs=/usr/lib/rpm/redhat/redhat-har
 %endif
 
 %configure \
-       --with-afs-sysname=${sysname} \
-       --disable-strip-binaries \
-       --disable-kernel-module \
-       --enable-debug \
-       --with-krb5 \
-       --enable-bitmap-later \
-       --enable-supergroups \
+    --with-afs-sysname=${sysname} \
+    --disable-strip-binaries \
+    --disable-kernel-module \
+    --enable-debug \
+    --with-krb5 \
+    --enable-bitmap-later \
+    --enable-supergroups \
     || exit 1
 
 make
@@ -247,10 +229,10 @@ export DONT_GPRINTIFY=1
 kv='26'
 
 case %{_arch} in
-       x86_64)                         sysname=amd64_linux${kv}        ;;
-       alpha*)                         sysname=alpha_linux_${kv}       ;;
-       i386|i486|i586|i686|athlon)     sysname=i386_linux${kv}         ;;
-       *)                              sysname=%{_arch}_linux${kv}     ;;
+    x86_64)                         sysname=amd64_linux${kv}        ;;
+    alpha*)                         sysname=alpha_linux_${kv}       ;;
+    i386|i486|i586|i686|athlon)     sysname=i386_linux${kv}         ;;
+    *)                              sysname=%{_arch}_linux${kv}     ;;
 esac
 
 # Copy root.client config files
@@ -271,14 +253,11 @@ tar cf - -C doc LICENSE html pdf | \
 install -m 644 %{SOURCE10} $RPM_BUILD_ROOT/$RPM_DOC_DIR/openafs-%{afsvers}
 install -m 644 %{SOURCE11} $RPM_BUILD_ROOT/$RPM_DOC_DIR/openafs-%{afsvers}
 
-# Copy the uninstalled krb5 files (or delete the unused krb5 files)
-#mv $RPM_BUILD_ROOT%{_prefix}/afs/bin/asetkey $RPM_BUILD_ROOT%{_sbindir}/asetkey
-
 # remove unused man pages
 for x in afs_ftpd afs_inetd afs_login afs_rcp afs_rlogind afs_rsh \
     dkload knfs symlink symlink_list symlink_make \
     symlink_remove; do
-	rm -f $RPM_BUILD_ROOT%{_mandir}/man1/${x}.1
+        rm -f $RPM_BUILD_ROOT%{_mandir}/man1/${x}.1
 done
 
 #
@@ -314,29 +293,14 @@ EOF-openafs-file-list
 
 # add man pages to the list
 cat openafs-man1files \
-        | ( while read x; do echo "%{_mandir}/man1/$x"; done ) \
-        >>openafs-file-list
+    | ( while read x; do echo "%{_mandir}/man1/$x"; done ) \
+    >>openafs-file-list
 cat openafs-man5files \
-        | ( while read x; do echo "%{_mandir}/man5/$x"; done ) \
-        >>openafs-file-list
+    | ( while read x; do echo "%{_mandir}/man5/$x"; done ) \
+    >>openafs-file-list
 cat openafs-man8files \
-        | ( while read x; do echo "%{_mandir}/man8/$x"; done ) \
-        >>openafs-file-list
-
-#
-# Install compatiblity links
-#
-for d in bin:bin etc:sbin; do
-  olddir=`echo $d | sed 's/:.*$//'`
-  newdir=`echo $d | sed 's/^.*://'`
-  mkdir -p $RPM_BUILD_ROOT%{_prefix}/afsws/$olddir
-  for f in `cat openafs-file-list`; do
-    if echo $f | grep -q /$newdir/; then
-      fb=`basename $f`
-      ln -sf %{_prefix}/$newdir/$fb $RPM_BUILD_ROOT%{_prefix}/afsws/$olddir/$fb
-    fi
-  done
-done
+    | ( while read x; do echo "%{_mandir}/man8/$x"; done ) \
+    >>openafs-file-list
 
 #
 # Remove files we're not installing
@@ -344,17 +308,17 @@ done
 
 # the rest are not needed.
 for f in dlog dpass install knfs livesys ; do
-  rm -f $RPM_BUILD_ROOT%{_bindir}/$f
+    rm -f $RPM_BUILD_ROOT%{_bindir}/$f
 done
 
 # not supported on Linux or duplicated
 for f in kdb rmtsysd kpwvalid ; do
-  rm -f $RPM_BUILD_ROOT%{_sbindir}/$f
+    rm -f $RPM_BUILD_ROOT%{_sbindir}/$f
 done
 
 # remove man pages from programs deleted above
 for f in 1/dlog 1/copyauth 1/dpass 1/livesys 8/rmtsysd 8/aklog_dynamic_auth 8/kdb 8/kpwvalid 8/xfs_size_check 1/package_test 5/package 8/package ; do
-  rm -f $RPM_BUILD_ROOT%{_mandir}/man$f.*
+    rm -f $RPM_BUILD_ROOT%{_mandir}/man$f.*
 done
 
 #delete static libraries not in upstream package
@@ -381,6 +345,7 @@ sed -i 's!/usr/afs/bin/bosserver!%{_sbindir}/bosserver!' $RPM_BUILD_ROOT%{_unitd
 chmod +x $RPM_BUILD_ROOT%{_libdir}/*.so*
 
 # Set up firewalld files
+# (rpmlint warns, but macro usage here matches firewalld.spec)
 install -d -m 755 %{buildroot}%{_prefix}/lib/firewalld/services
 install -p -m 644 %SOURCE21 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-bos.xml
 install -p -m 644 %SOURCE23 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-fileserver.xml
@@ -416,32 +381,25 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man5/CellAlias.*
 %clean
 rm -f openafs-file-list
 [ "$RPM_BUILD_ROOT" != "/" -a "x%{debugspec}" != "x1" ] && \
-	rm -fr $RPM_BUILD_ROOT
+    rm -fr $RPM_BUILD_ROOT
 
 ##############################################################################
 ###
 ### scripts
 ###
 ##############################################################################
-%post server
+%post authlibs -p /sbin/ldconfig
 
-%post authlibs
-/sbin/ldconfig
-
-%postun authlibs
-/sbin/ldconfig
+%postun authlibs -p /sbin/ldconfig
 
 %preun server
 if [ $1 -eq 0 ] ; then
-    	/bin/systemctl --no-reload disable openafs-server.service > /dev/null 2>&1 || :
-    	/bin/systemctl stop openafs-server.service > /dev/null 2>&1 || :
+    /bin/systemctl --no-reload disable openafs-server.service > /dev/null 2>&1 || :
+    /bin/systemctl stop openafs-server.service > /dev/null 2>&1 || :
 fi
 
 %postun server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
-
-%post server-firewalld
-%firewalld_reload
 
 ##############################################################################
 ###
@@ -665,10 +623,6 @@ fi
 %{_mandir}/man1/klog.krb5.1.gz
 %{_mandir}/man8/asetkey.*
 
-%files compat
-%defattr(-,root,root)
-%{_prefix}/afsws
-
 %files server-firewalld
 %defattr(-,root,root)
 %{_prefix}/lib/firewalld/services/afs3-bos.xml
@@ -684,6 +638,9 @@ fi
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.6
+- Cleanup using rpmlint
+
 * Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.5
 - Cleanup.
 
