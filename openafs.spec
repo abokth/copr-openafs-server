@@ -7,7 +7,7 @@
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1.0.kth.7
+%define pkgrel 1.0.kth.8
 
 Summary: A distributed filesystem
 Name: openafs
@@ -185,21 +185,12 @@ case %{_arch} in
     i386|i486|i586|i686|athlon)     sysname=i386_linux${kv}         ;;
     *)                              sysname=%{_arch}_linux${kv}     ;;
 esac
-DESTDIR=$RPM_BUILD_ROOT; export DESTDIR
-CFLAGS="$RPM_OPT_FLAGS"; export CFLAGS
 
 KRB5_CONFIG="%{krb5config}"
 export KRB5_CONFIG
 
-#if [[ ! -f configure ]]; then
-    echo %{afsvers} > .version
-    sh regen.sh
-#fi
-
-# Fedora 23+ won't compile with the redhat-hardened-ld
-%if 0%{?fedora} >= 23
-LDFLAGS=$( echo %__global_ldflags | sed 's!-specs=/usr/lib/rpm/redhat/redhat-hardened-ld!!'); export LDFLAGS
-%endif
+echo %{afsvers} > .version
+sh regen.sh
 
 %configure \
     --with-afs-sysname=${sysname} \
@@ -211,8 +202,7 @@ LDFLAGS=$( echo %__global_ldflags | sed 's!-specs=/usr/lib/rpm/redhat/redhat-har
     --enable-supergroups \
     || exit 1
 
-make
-#make -j16
+%make_build
 
 ##############################################################################
 #
@@ -635,6 +625,9 @@ fi
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.8
+- use build macros, cleanup
+
 * Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.7
 - do not build kernel module
 
