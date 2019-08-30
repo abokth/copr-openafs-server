@@ -7,7 +7,7 @@
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1.0.kth.6
+%define pkgrel 1.0.kth.7
 
 Summary: A distributed filesystem
 Name: openafs
@@ -213,9 +213,6 @@ LDFLAGS=$( echo %__global_ldflags | sed 's!-specs=/usr/lib/rpm/redhat/redhat-har
 
 make
 #make -j16
-
-# Build the libafs tree
-make only_libafs_tree || exit 1
 
 ##############################################################################
 #
@@ -638,6 +635,9 @@ fi
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.7
+- do not build kernel module
+
 * Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.6
 - Cleanup using rpmlint
 
