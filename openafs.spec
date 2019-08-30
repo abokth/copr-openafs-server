@@ -7,13 +7,13 @@
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1.0.kth.8
+%define pkgrel 1.0.kth.9
 
 Summary: A distributed filesystem
 Name: openafs
 Version: %{pkgvers}
 Release: %{pkgrel}%{?dist}
-License: IBM Public License
+License: IBM
 URL: https://www.openafs.org/
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Group: Networking/Filesystems
@@ -625,6 +625,9 @@ fi
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.9
+- use short name for license
+
 * Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.8
 - use build macros, cleanup
 
