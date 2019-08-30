@@ -1,3 +1,6 @@
+## This only builds the userland portion, kernel modules are excluded.
+## Support for distros older than EL7 is dropped.
+
 # Openafs Spec $Revision$
 
 #define afsvers 1.8.0pre5
@@ -7,9 +10,7 @@
 # for beta/rc releases make pkgrel 0.<tag>
 # for real releases make pkgrel 1 (or more for extra releases)
 #define pkgrel 0.pre1
-%define pkgrel 1
-%define kmod_name openafs
-%define dkms_version %{version}-%{pkgrel}%{?dist}
+%define pkgrel 1.0.kth.1
 
 # Define the location of your init.d directory
 %define initdir /etc/rc.d/init.d
@@ -26,21 +27,17 @@ URL: http://www.openafs.org
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Packager: OpenAFS Gatekeepers <openafs-gatekeepers@openafs.org>
 Group: Networking/Filesystems
-BuildRequires: %{?kdepend:%{kdepend}, } ncurses-devel, flex, bison, automake, autoconf, libtool
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
+BuildRequires: ncurses-devel, flex, bison, automake, autoconf, libtool
 BuildRequires: systemd-units
-%endif
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 6
 BuildRequires: perl-devel
-%endif
 BuildRequires: perl(ExtUtils::Embed)
 BuildRequires: krb5-devel
 
 ExclusiveArch: %{ix86} x86_64 ia64 s390 s390x sparc64 ppc ppc64
 
 #    http://dl.openafs.org/dl/openafs/candidate/%{afsvers}/...
-Source0: http://www.openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-src.tar.bz2
-Source1: http://www.openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-doc.tar.bz2
+Source0: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-src.tar.bz2
+Source1: https://openafs.org/dl/openafs/%{afsvers}/openafs-%{afsvers}-doc.tar.bz2
 Source3: openafs-client.service
 %define srcdir openafs-%{afsvers}
 
@@ -74,12 +71,10 @@ OpenAFS packages but are not necessarily tied to a client or server.
 ##############################################################################
 %package client
 Requires: binutils, openafs = %{version}
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 Requires: systemd-units
 Requires(post): systemd-units, systemd-sysv
 Requires(preun): systemd-units
 Requires(postun): systemd-units
-%endif
 Requires: %{name}-kmod >= %{version}
 Provides: %{name}-kmod-common = %{version}
 Summary: OpenAFS Filesystem Client
@@ -98,12 +93,10 @@ AFS.
 Requires: openafs = %{version}
 Summary: OpenAFS Filesystem Server
 Group: Networking/Filesystems
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 Requires: systemd-units
 Requires(post): systemd-units, systemd-sysv
 Requires(preun): systemd-units
 Requires(postun): systemd-units
-%endif
 
 %description server
 The AFS distributed filesystem.  AFS is a distributed filesystem
@@ -242,7 +235,6 @@ is completely optional, and is only necessary to support legacy
 applications and scripts that hard-code the location of AFS client
 programs.
 
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 %package client-firewalld
 Summary: OpenAFS server firewalld configuration for a client
 Requires: openafs = %{version}, openafs-client = %{version}, firewalld-filesystem
@@ -272,26 +264,6 @@ administrative management.
 
 This package provides the service definitions to use in a firewalld
 setup for an OpenAFS server.
-%endif
-
-%package -n dkms-openafs
-Summary:        DKMS-ready kernel source for AFS distributed filesystem
-Group:          Development/Kernel
-Provides:       openafs-kernel = %{version}
-Provides:       openafs-kmod = %{version}
-Requires(pre):  dkms
-Requires(pre):  flex, bison, gcc, make
-Requires(post): dkms
-Requires:	openafs-client = %{version}
-
-%description -n dkms-openafs
-The AFS distributed filesystem.  AFS is a distributed filesystem
-allowing cross-platform sharing of files among multiple computers.
-Facilities are provided for access control, authentication, backup and
-administrative management.
-
-This package provides the source code to allow DKMS to build an
-AFS kernel module.
 
 
 ##############################################################################
@@ -377,16 +349,11 @@ mkdir -p $RPM_BUILD_ROOT/etc/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{initdir}
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/cache/openafs
 install -m 755 src/packaging/RedHat/openafs.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/openafs
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-install -m 755 src/packaging/RedHat/openafs-client.init $RPM_BUILD_ROOT%{initdir}/openafs-client
-install -m 755 src/packaging/RedHat/openafs-server.init $RPM_BUILD_ROOT%{initdir}/openafs-server
-%else
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/modules
 install -m 644 %{SOURCE3} $RPM_BUILD_ROOT%{_unitdir}/openafs-client.service
 install -m 755 src/packaging/RedHat/openafs-client.modules $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/modules/openafs-client.modules
 install -m 644 src/packaging/RedHat/openafs-server.service $RPM_BUILD_ROOT%{_unitdir}/openafs-server.service
-%endif
 
 
 #
@@ -549,7 +516,6 @@ sed -i 's!/usr/vice/cache!%{_localstatedir}/cache/openafs!' $RPM_BUILD_ROOT%{_sy
 # create "Provides" entries in the package metadata for the libraries
 chmod +x $RPM_BUILD_ROOT%{_libdir}/*.so*
 
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 # Set up firewalld files
 install -d -m 755 %{buildroot}%{_prefix}/lib/firewalld/services
 install -p -m 644 %SOURCE21 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-bos.xml
@@ -560,30 +526,6 @@ install -p -m 644 %SOURCE25 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-r
 install -p -m 644 %SOURCE26 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-update.xml
 install -p -m 644 %SOURCE27 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-vlserver.xml
 install -p -m 644 %SOURCE28 %{buildroot}%{_prefix}/lib/firewalld/services/afs3-volser.xml
-%endif
-
-#
-# install dkms source
-#
-install -d -m 755 $RPM_BUILD_ROOT%{_prefix}/src
-cp -a libafs_tree $RPM_BUILD_ROOT%{_prefix}/src/openafs-%{dkms_version}
-
-cat > $RPM_BUILD_ROOT%{_prefix}/src/openafs-%{dkms_version}/dkms.conf <<"EOF"
-
-PACKAGE_VERSION="%{dkms_version}"
-
-# Items below here should not have to change with each driver version
-PACKAGE_NAME="openafs"
-MAKE[0]='./configure --with-linux-kernel-headers=${kernel_source_dir} --with-linux-kernel-packaging && make && mv src/libafs/MODLOAD-*/openafs.ko .'
-CLEAN="make -C src/libafs clean"
-
-BUILT_MODULE_NAME[0]="openafs"
-DEST_MODULE_LOCATION[0]="/extra/$PACKAGE_NAME/"
-STRIP[0]=no
-AUTOINSTALL=yes
-NO_WEAK_MODULES="true"
-
-EOF
 
 
 ##############################################################################
@@ -619,14 +561,10 @@ if st and st.type == "directory" then
 end
 
 %post client
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-chkconfig --add openafs-client
-%else
 if [ $1 -eq 1 ] ; then 
     # Initial installation 
     /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
-%endif
 if [ ! -d /afs ]; then
 	mkdir /afs
 	chown root.root /afs
@@ -720,21 +658,11 @@ fi
 /sbin/chkconfig --del openafs-server >/dev/null 2>&1 || :
 %endif
 
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 %post client-firewalld
 %firewalld_reload
 
 %post server-firewalld
 %firewalld_reload
-%endif
-
-%post -n dkms-openafs
-dkms add -m openafs -v %{dkms_version} --rpm_safe_upgrade
-dkms build -m openafs -v %{dkms_version} --rpm_safe_upgrade
-dkms install -m openafs -v %{dkms_version} --rpm_safe_upgrade
-
-%preun -n dkms-openafs
-dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 
 ##############################################################################
 ###
@@ -829,12 +757,8 @@ dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 %{_bindir}/up
 %{_sbindir}/afsd
 %{_prefix}/share/openafs/C/afszcm.cat
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-%{initdir}/openafs-client
-%else
 %{_unitdir}/openafs-client.service
 %{_sysconfdir}/sysconfig/modules/openafs-client.modules
-%endif
 %{_mandir}/man1/cmdebug.*
 %{_mandir}/man1/up.*
 %{_mandir}/man5/afs.5.gz
@@ -882,11 +806,7 @@ dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 %{_sbindir}/vldb_convert
 %{_sbindir}/voldump
 %{_sbindir}/volscan
-%if 0%{?fedora} < 15 && 0%{?rhel} < 7
-%{initdir}/openafs-server
-%else
 %{_unitdir}/openafs-server.service
-%endif
 %{_mandir}/man3/AFS::ukernel.*
 %{_mandir}/man5/AuthLog.*
 %{_mandir}/man5/BackupLog.*
@@ -1015,7 +935,6 @@ dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 %{_prefix}/afs/local
 %{_prefix}/afs/logs
 
-%if 0%{?fedora} >= 15 || 0%{?rhel} >= 7
 %files client-firewalld
 %defattr(-,root,root)
 %{_prefix}/lib/firewalld/services/afs3-callback.xml
@@ -1029,11 +948,6 @@ dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 %{_prefix}/lib/firewalld/services/afs3-update.xml
 %{_prefix}/lib/firewalld/services/afs3-vlserver.xml
 %{_prefix}/lib/firewalld/services/afs3-volser.xml
-%endif
-
-%files -n dkms-openafs
-%defattr(-,root,root)
-%{_prefix}/src/openafs-%{dkms_version}
 
 ##############################################################################
 ###
@@ -1041,6 +955,9 @@ dkms remove -m openafs -v %{dkms_version} --rpm_safe_upgrade --all ||:
 ###
 ##############################################################################
 %changelog
+* Fri Aug 30 2019 Alexander Boström <abo@kth.se> - 1.8.3-1.0.kth.1
+- 1.8.3 without kernel module
+
 * Wed Mar 20 2019 Jonathan S. Billings <jsbillin@umich.edu> - 1.8.3-0.pre1
 - Packaged version 1.8.3pre1
 - Add 'make' as a dependency for dkms-openafs
